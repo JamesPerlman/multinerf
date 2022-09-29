@@ -83,7 +83,7 @@ class Config:
   checkpoint_every: int = 10000  # The number of steps to save a checkpoint.
   print_every: int = 100  # The number of steps between reports to tensorboard.
   train_render_every: int = 5000  # Steps between test set renders when training
-  cast_rays_in_train_step: bool = True  # If True, compute rays in train step.
+  cast_rays_in_train_step: bool = True  # If True, compute rays in ta'rain step.
   data_loss_type: str = 'charb'  # What kind of loss to use ('mse' or 'charb').
   charb_padding: float = 0.001  # The padding used for Charbonnier loss.
   data_loss_mult: float = 1.0  # Mult for the finest data term in the loss.
