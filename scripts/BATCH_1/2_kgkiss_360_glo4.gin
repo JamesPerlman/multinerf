@@ -1,13 +1,10 @@
 Config.dataset_loader = 'jperf'
-Config.near = 0.033
-Config.far = 1e6
+Config.near = 0.5
+Config.far = 1e2
 Config.factor = 1
-Config.batch_size = 512
-Config.max_steps = 150000
-Config.checkpoint_every = 2500
-Model.raydist_fn = @jnp.reciprocal
-Model.num_glo_features = 4
-Model.opaque_background = True
+Config.batch_size = 4096
+Config.max_steps = 250000
+Config.checkpoint_every = 5000
 Config.train_render_every = 0
 
 PropMLP.warp_fn = @coord.contract
@@ -20,3 +17,9 @@ NerfMLP.warp_fn = @coord.contract
 NerfMLP.net_depth = 8
 NerfMLP.net_width = 1024
 NerfMLP.disable_density_normals = True
+
+Model.raydist_fn = @jnp.reciprocal
+Model.num_glo_features = 4
+Model.opaque_background = True
+Model.num_prop_samples = 128
+Model.num_nerf_samples = 128

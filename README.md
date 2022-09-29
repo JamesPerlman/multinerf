@@ -42,6 +42,23 @@ git clone https://github.com/rmbrualla/pycolmap.git ./internal/pycolmap
 ```
 You'll probably also need to update your JAX installation to support GPUs or TPUs.
 
+conda:
+
+conda install -c conda-forge cudnn=8.4.1.50
+
+conda activate multinerf
+create a file in $CONDA_PREFIX/etc/conda/activate.d/multinerf_activate.sh:
+
+export OLD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+
+create a file in $CONDA_PREFIX/etc/conda/deactivate.d/multinerf_deactivate.sh:
+
+export LD_LIBRARY_PATH=$OLD_LD_LIBRARY_PATH
+unset OLD_LD_LIBRARY_PATH
+
+
+
 ## Running
 
 Example scripts for training, evaluating, and rendering can be found in

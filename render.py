@@ -162,20 +162,19 @@ def main(unused_argv):
 
     rendering['rgb'] = postprocess_fn(rendering['rgb'])
 
-    save_fn(
-        utils.save_img_u8, rendering['rgb'], path_fn(f'color_{idx_str}.png'))
-    if 'normals' in rendering:
-      save_fn(
-          utils.save_img_u8, rendering['normals'] / 2. + 0.5,
-          path_fn(f'normals_{idx_str}.png'))
-    save_fn(
-        utils.save_img_f32, rendering['distance_mean'],
-        path_fn(f'distance_mean_{idx_str}.tiff'))
-    save_fn(
-        utils.save_img_f32, rendering['distance_median'],
-        path_fn(f'distance_median_{idx_str}.tiff'))
-    save_fn(
-        utils.save_img_f32, rendering['acc'], path_fn(f'acc_{idx_str}.tiff'))
+    save_fn(utils.save_img_u8, rendering['rgb'], path_fn(f'color_{idx_str}.png'))
+    # if 'normals' in rendering:
+    #   save_fn(
+    #       utils.save_img_u8, rendering['normals'] / 2. + 0.5,
+    #       path_fn(f'normals_{idx_str}.png'))
+    # save_fn(
+    #     utils.save_img_f32, rendering['distance_mean'],
+    #     path_fn(f'distance_mean_{idx_str}.tiff'))
+    # save_fn(
+    #     utils.save_img_f32, rendering['distance_median'],
+    #     path_fn(f'distance_median_{idx_str}.tiff'))
+    # save_fn(
+    #     utils.save_img_f32, rendering['acc'], path_fn(f'acc_{idx_str}.tiff'))
 
   if config.render_save_async:
     # Wait until all worker threads finish.

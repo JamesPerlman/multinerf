@@ -13,16 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=2,3
 
-SCENE=nightpiano
 EXPERIMENT=raw
-DATA_DIR=/usr/local/google/home/barron/tmp/nerf_data/rawnerf/scenes
-CHECKPOINT_DIR=/usr/local/google/home/barron/tmp/nerf_results/"$EXPERIMENT"/"$SCENE"
+DATA_DIR=/mnt/e/2022/nerf-library/food/1b-pcporkbun
+#DATA_DIR=/mnt/c/Users/bizon/Downloads/raw/rawnerf/scenes/bikes
+CHECKPOINT_DIR=${DATA_DIR}/rawnerf
 
-rm "$CHECKPOINT_DIR"/*
 python -m train \
   --gin_configs=configs/llff_raw.gin \
-  --gin_bindings="Config.data_dir = '${DATA_DIR}/${SCENE}'" \
+  --gin_bindings="Config.data_dir = '${DATA_DIR}'" \
   --gin_bindings="Config.checkpoint_dir = '${CHECKPOINT_DIR}'" \
   --logtostderr

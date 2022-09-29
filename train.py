@@ -16,6 +16,7 @@
 
 import functools
 import gc
+import math
 import time
 
 from absl import app
@@ -34,6 +35,8 @@ import jax
 from jax import random
 import jax.numpy as jnp
 import numpy as np
+import tensorflow as tf
+tf.config.experimental.set_visible_devices([], "GPU")
 
 configs.define_common_flags()
 jax.config.parse_flags_with_absl()
@@ -216,7 +219,7 @@ def main(unused_argv):
         state_to_save = jax.device_get(
             flax.jax_utils.unreplicate(state))
         checkpoints.save_checkpoint(
-            config.checkpoint_dir, state_to_save, int(step), keep=100)
+            config.checkpoint_dir, state_to_save, int(step), keep=math.inf)
 
     # Test-set evaluation.
     if config.train_render_every > 0 and step % config.train_render_every == 0:

@@ -19,6 +19,8 @@ import copy
 import json
 import os
 from os import path
+from pathlib import Path
+from plistlib import FMT_XML
 import queue
 import threading
 from typing import Mapping, Optional, Sequence, Text, Tuple, Union
@@ -48,6 +50,7 @@ def load_dataset(split, train_dir, config):
       'tat_nerfpp': TanksAndTemplesNerfPP,
       'tat_fvs': TanksAndTemplesFVS,
       'dtu': DTU,
+      'jperf': JPeRF,
   }
   return dataset_dict[config.dataset_loader](split, train_dir, config)
 
@@ -406,12 +409,11 @@ class Dataset(threading.Thread, metaclass=abc.ABCMeta):
       A dict mapping from strings utils.Rays or arrays of image data.
       This is the batch provided for one NeRF train or test iteration.
     """
-
     broadcast_scalar = lambda x: np.broadcast_to(x, pix_x_int.shape)[..., None]
     ray_kwargs = {
         'lossmult': broadcast_scalar(1.) if lossmult is None else lossmult,
-        'near': broadcast_scalar(self.near),
-        'far': broadcast_scalar(self.far),
+        'near': broadcast_scalar(self.nears[cam_idx]),
+        'far': broadcast_scalar(self.fars[cam_idx]),
         'cam_idx': broadcast_scalar(cam_idx),
     }
     # Collect per-camera information needed for each ray.
@@ -909,3 +911,118 @@ class DTU(Dataset):
     self.height, self.width = images.shape[1:3]
     self.camtoworlds = camtoworlds[indices]
     self.pixtocams = pixtocams[indices]
+
+
+class JPeRF(Dataset):
+  """jperl's Blender NeRF Tools Dataset."""
+
+  def _parse_transforms(self, transforms_path: str, scale_factor: int = 1):
+
+    data: dict
+    with open(transforms_path, 'r') as f:
+        data = json.load(f)
+
+    n_images = len(data['frames'])
+
+    w = int(data['w'])
+    h = int(data['h'])
+    fl = data['fl_x']
+
+    if scale_factor > 1:
+      w = int(w / scale_factor)
+      h = int(h / scale_factor)
+      fl = fl / scale_factor
+
+    camtoworlds = []
+    pixtocams = []
+    image_paths = []
+
+    # Loop over all images.
+    for i in range(n_images):
+      frame = data['frames'][i]
+
+      image_paths.append(frame["file_path"])
+      
+      pose = np.array(frame['transform_matrix'])
+
+      if scale_factor > 1:
+        pose = np.diag([1. / scale_factor, 1. / scale_factor, 1. / scale_factor, 1.]).astype(np.float32) @ pose
+
+      camtoworlds.append(pose)
+      
+      cx: float
+      if 'camera_angle_x' in frame:
+        cx = frame['camera_angle_x']
+      else:
+        cx = data['camera_angle_x']
+      
+      cam_fl = 0.5 * w / np.tan(0.5 * cx)
+      p2c = camera_utils.get_pixtocam(cam_fl, w, h)
+      pixtocams.append(p2c)
+
+    
+    nears = np.array([f['near'] for f in data['frames']])
+    fars = np.array([f['far'] for f in data['frames']])
+
+    coeffs = ['k1', 'k2', 'p1', 'p2']
+    params = {c: (data[c] if c in data else 0.) for c in coeffs}
+
+    return (image_paths, camtoworlds, pixtocams, fl, w, h, params, nears, fars)
+
+  def _load_renderings(self, config):
+    """Load images from disk."""
+
+    fname: str
+    
+    if config.render_path:
+      self.render_path = True
+      fname = 'render.json'
+    else:
+      fname = 'transforms.json'
+    
+    transforms_path = os.path.join(self.data_dir, fname)
+    
+    (image_paths, camtoworlds, pixtocams, focal, width, height, distortion_params, nears, fars) = self._parse_transforms(
+      transforms_path,
+      config.factor
+    )
+
+    if config.rawnerf_mode:
+      # Load raw images and metadata.
+      images, metadata, raw_testscene = raw_utils.load_raw_dataset(
+          self.split,
+          self.data_dir,
+          [Path(image_path).name for image_path in image_paths],
+          config.exposure_percentile,
+          config.factor)
+      self.metadata = metadata
+    elif not self.render_path:
+      images = []
+
+      # Load image.
+      for image_path in image_paths:
+        image = utils.load_img(os.path.join(self.data_dir, image_path)) / 255.
+    
+        if config.factor > 1:
+          image = lib_image.downsample(image, config.factor)
+        
+        images.append(image)
+        self.images = np.stack(images)
+    
+    camtoworlds = np.stack(camtoworlds, axis=0)
+
+    self._n_examples = len(camtoworlds)
+    self.focal = focal
+    self.height = height
+    self.width = width
+    self.camtoworlds = camtoworlds
+    self.pixtocams = np.stack(pixtocams)
+    self.distortion_params = distortion_params
+    self.nears = nears
+    self.fars = fars
+
+    if self.split == 'test':
+      self.images = []
+      self.camtoworlds = []
+      self.pixtocams = []
+      self._n_examples = 0

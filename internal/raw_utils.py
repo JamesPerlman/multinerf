@@ -354,7 +354,11 @@ def load_raw_dataset(split: utils.DataSplit,
   # Rescale raw sensor measurements to [0, 1] (plus noise).
   blacklevel = meta['BlackLevel'].reshape(-1, 1, 1)
   whitelevel = meta['WhiteLevel'].reshape(-1, 1, 1)
+  print(f"{whitelevel.shape}")
+  print(f"{raws.shape}")
   images = (raws - blacklevel) / (whitelevel - blacklevel) * shutter_ratio
+  print(f"{images.shape}")
+  exit()
 
   # Calculate value for exposure level when gamma mapping, defaults to 97%.
   # Always based on full resolution image 0 (for consistency).
